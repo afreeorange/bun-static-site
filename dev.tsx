@@ -1,5 +1,6 @@
 import { h } from "preact";
 import { render } from "preact-render-to-string";
+import type { ServerWebSocket } from "bun";
 
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -37,7 +38,7 @@ const LIVE_RELOAD_SCRIPT = `
 `;
 
 // Track connected WebSocket clients
-const clients = new Set();
+const clients: Set<ServerWebSocket<unknown>> = new Set();
 
 async function main() {
 	await mkdir(DIST_DIR, { recursive: true });
@@ -91,11 +92,11 @@ ${sassResult.css}
 async function compileAndRenderTSX() {
 	try {
 		// Clear require cache to ensure fresh imports
-		Object.keys(require.cache).forEach((key) => {
+		for (const key of Object.keys(require.cache)) {
 			if (key.includes(SRC_DIR)) {
 				delete require.cache[key];
 			}
-		});
+		}
 
 		// Dynamically import the TSX file
 		const modulePath = `${TSX_SRC}?update=${Date.now()}`; // Add cache busting
@@ -122,7 +123,6 @@ async function compileAndRenderTSX() {
 </body>
 </html>`;
 
-		// Write the HTML to the output file
 		await writeFile(HTML_DIST, htmlDocument);
 		console.log(`TSX rendered and saved to ${HTML_DIST}`);
 
